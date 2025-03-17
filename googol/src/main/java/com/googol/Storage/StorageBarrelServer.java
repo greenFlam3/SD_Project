@@ -8,8 +8,10 @@ public class StorageBarrelServer {
         try {
             int port = Integer.parseInt(args[0]); // Porta passada como argumento
             int id = Integer.parseInt(args[1]);   // Identificador único do Storage Barrel
+
             StorageBarrel barrel = new StorageBarrelImpl(id);
             Registry registry = LocateRegistry.createRegistry(port);
+
             registry.rebind("StorageBarrel", barrel);
             System.out.println("[Barrel " + id + "] Ativo na porta " + port);
 
