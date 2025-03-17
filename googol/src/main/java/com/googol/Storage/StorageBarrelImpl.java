@@ -7,6 +7,15 @@ import java.util.Map;
 import java.util.Set;
 
 public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBarrel {
+    @Override
+    public void addToIndex(String key, String value) throws RemoteException {
+        invertedIndex.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+    }
+
+    @Override
+    public Set<String> search(String key) throws RemoteException {
+        return invertedIndex.getOrDefault(key, Set.of());
+    }
     private final Map<String, Set<String>> invertedIndex;
     private final int id; // Identificador do Storage Barrel
 
