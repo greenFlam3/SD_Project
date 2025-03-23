@@ -12,6 +12,9 @@ public interface StorageBarrel extends Remote {
     // Pesquisa uma palavra e retorna os URLs onde ela ocorre
     Set<String> search(String word) throws RemoteException;
 
+    // Pesquisa múltiplos termos e retorna URLs que contenham todos eles
+    Set<String> searchMultipleTerms(Set<String> terms) throws RemoteException;
+
     // Armazena o conteúdo de uma página (separa em palavras e as indexa)
     void armazenarPagina(String url, String conteudo) throws RemoteException;
 

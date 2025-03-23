@@ -23,7 +23,7 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
      */
     @Override
     public void addToIndex(String word, String url) throws RemoteException {
-        invertedIndex.computeIfAbsent(word, k -> new HashSet<>()).add(url);
+        invertedIndex.computeIfAbsent(word.toLowerCase(), k -> new HashSet<>()).add(url);
     }
 
     /**
@@ -31,8 +31,38 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
      */
     @Override
     public Set<String> search(String word) throws RemoteException {
-        return invertedIndex.getOrDefault(word, Set.of()); 
-        // Si usas Java 8 o anterior, reemplaza Set.of() por Collections.emptySet()
+        return invertedIndex.getOrDefault(word.toLowerCase(), Set.of());
+    }
+
+    /**
+     * Pesquisa múltiplos termos e retorna apenas os URLs que contêm todos os termos.
+     */
+    @Override
+    public Set<String> searchMultipleTerms(Set<String> terms) throws RemoteException {
+        Set<String> result = null;
+
+        for (String term : terms) {
+            Set<String> urls = invertedIndex.get(term.toLowerCase());
+
+            if (urls == null) {
+                return Set.of(); // Se um termo não for encontrado, retorna conjunto vazio.
+            }
+            if (result == null) {
+                result = new HashSet<>(urls); // Primeiro conjunto encontrado
+            } else {
+                result.retainAll(urls); // Mantém apenas URLs que aparecem em todos os termos
+            }
+        }
+        return result != null ? result : Set.of();
+    }
+
+    /**
+     * Pesquisa um termo (chama diretamente o método search()).
+     */
+    @Override
+    public Set<String> buscarPagina(String termo) throws RemoteException {
+        System.out.println("[Barrel " + id + "] Searching for term: " + termo);
+        return search(termo);
     }
 
     /**
@@ -42,24 +72,13 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
     public void armazenarPagina(String url, String conteudo) throws RemoteException {
         String[] palavras = conteudo.toLowerCase().split("\\s+");
         for (String palavra : palavras) {
-            // Reutilizamos a lógica de addToIndex
             addToIndex(palavra, url);
         }
-        System.out.println("[Barrel " + id + "] Página armazenada: " + url);
-    }
-
-    /**
-     * Pesquisa um termo (funciona como search, mas aqui mostramos logs distintos).
-     */
-    @Override
-    public Set<String> buscarPagina(String termo) throws RemoteException {
-        System.out.println("[Barrel " + id + "] Pesquisando termo: " + termo);
-        return invertedIndex.getOrDefault(termo.toLowerCase(), Set.of());
+        System.out.println("[Barrel " + id + "] Page stored: " + url);
     }
 
     /**
      * Retorna o total de páginas distintas indexadas.
-     * Para isso, percorremos os valores do mapa e contamos todos os URLs.
      */
     @Override
     public int getTotalPaginas() throws RemoteException {
