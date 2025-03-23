@@ -17,7 +17,7 @@ public class Downloader {
             Registry registry = LocateRegistry.getRegistry("localhost", 1099);
             urlQueue = (URLQueueInterface) registry.lookup("URLQueue");
         } catch (Exception e) {
-            System.err.println("Erro ao conectar à URLQueue: " + e.getMessage());
+            System.err.println("Error connecting to URLQueue: " + e.getMessage());
         }
     }
 
@@ -25,25 +25,25 @@ public class Downloader {
         try {
             Document doc = Jsoup.connect(url).get();
 
-            // Extrai palavras e indexa (simplificado para foco na fila de URLs)
+            // Extract words and index them (simplified for now)
             StringTokenizer tokenizer = new StringTokenizer(doc.text());
             while (tokenizer.hasMoreTokens()) {
-                System.out.println("Palavra indexada: " + tokenizer.nextToken());
+                System.out.println("Indexed word: " + tokenizer.nextToken());
             }
 
-            // Adiciona novos links à fila
+            // Extract and add new links to the queue
             Elements links = doc.select("a[href]");
             links.forEach(link -> {
                 try {
                     urlQueue.addURL(link.absUrl("href"));
                 } catch (Exception e) {
-                    System.err.println("Erro ao adicionar URL: " + e.getMessage());
+                    System.err.println("Error adding URL to queue: " + e.getMessage());
                 }
             });
 
-            System.out.println("Processado: " + url);
+            System.out.println("Processed: " + url);
         } catch (Exception e) {
-            System.err.println("Erro ao acessar URL: " + url);
+            System.err.println("Error accessing URL: " + url);
         }
     }
 
@@ -56,7 +56,7 @@ public class Downloader {
                 if (url != null) processURL(url);
             }
         } catch (Exception e) {
-            System.err.println("Erro no downloader: " + e.getMessage());
+            System.err.println("Downloader encountered an error: " + e.getMessage());
         }
     }
 }
