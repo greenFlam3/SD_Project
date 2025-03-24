@@ -49,8 +49,6 @@ public class Downloader {
 
     public static void main(String[] args) {
         try {
-            urlQueue.addURL("https://example.com");
-
             while (!urlQueue.isEmpty()) {
                 String url = urlQueue.getNextURL();
                 if (url != null) processURL(url);
