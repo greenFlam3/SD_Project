@@ -23,4 +23,7 @@ public interface StorageBarrel extends Remote {
 
     // Retorna o total de páginas distintas indexadas
     int getTotalPaginas() throws RemoteException;
+
+    // Retorna um resumo da página com título e um trecho de texto
+    PageInfo getPageSummary(String url) throws RemoteException;
 }

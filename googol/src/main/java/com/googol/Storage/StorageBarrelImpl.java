@@ -10,33 +10,28 @@ import java.util.Set;
 public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBarrel {
 
     private final Map<String, Set<String>> invertedIndex;
+    private final Map<String, String> pageTitles;
+    private final Map<String, String> pageSnippets;
     private final int id; // Identificador do Storage Barrel
 
     public StorageBarrelImpl(int id) throws RemoteException {
         super();
         this.id = id;
         this.invertedIndex = new HashMap<>();
+        this.pageTitles = new HashMap<>();
+        this.pageSnippets = new HashMap<>();
     }
 
-    /**
-     * Adiciona uma palavra (word) ao índice, associando-a ao URL especificado.
-     */
     @Override
     public void addToIndex(String word, String url) throws RemoteException {
         invertedIndex.computeIfAbsent(word.toLowerCase(), k -> new HashSet<>()).add(url);
     }
 
-    /**
-     * Pesquisa uma palavra e retorna os URLs onde ela ocorre.
-     */
     @Override
     public Set<String> search(String word) throws RemoteException {
         return invertedIndex.getOrDefault(word.toLowerCase(), Set.of());
     }
 
-    /**
-     * Pesquisa múltiplos termos e retorna apenas os URLs que contêm todos os termos.
-     */
     @Override
     public Set<String> searchMultipleTerms(Set<String> terms) throws RemoteException {
         Set<String> result = null;
@@ -56,30 +51,28 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
         return result != null ? result : Set.of();
     }
 
-    /**
-     * Pesquisa um termo (chama diretamente o método search()).
-     */
     @Override
     public Set<String> buscarPagina(String termo) throws RemoteException {
         System.out.println("[Barrel " + id + "] Searching for term: " + termo);
         return search(termo);
     }
 
-    /**
-     * Armazena o conteúdo de uma página (URL) e indexa cada palavra.
-     */
     @Override
     public void armazenarPagina(String url, String conteudo) throws RemoteException {
         String[] palavras = conteudo.toLowerCase().split("\\s+");
         for (String palavra : palavras) {
             addToIndex(palavra, url);
         }
+
+        // Extraindo título e snippet
+        String title = conteudo.split("\\n")[0]; // Primeira linha como título
+        String snippet = conteudo.length() > 150 ? conteudo.substring(0, 150) + "..." : conteudo;
+        pageTitles.put(url, title);
+        pageSnippets.put(url, snippet);
+
         System.out.println("[Barrel " + id + "] Page stored: " + url);
     }
 
-    /**
-     * Retorna o total de páginas distintas indexadas.
-     */
     @Override
     public int getTotalPaginas() throws RemoteException {
         Set<String> allUrls = new HashSet<>();
@@ -87,5 +80,12 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
             allUrls.addAll(urls);
         }
         return allUrls.size();
+    }
+
+    @Override
+    public PageInfo getPageSummary(String url) throws RemoteException {
+        String title = pageTitles.getOrDefault(url, "No Title Available");
+        String snippet = pageSnippets.getOrDefault(url, "No Snippet Available");
+        return new PageInfo(title, snippet);
     }
 }

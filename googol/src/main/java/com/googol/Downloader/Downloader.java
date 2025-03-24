@@ -1,6 +1,7 @@
 package com.googol.Downloader;
 
 import com.googol.Queue.URLQueueInterface;
+import com.googol.Storage.StorageBarrel;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -11,13 +12,15 @@ import java.util.StringTokenizer;
 
 public class Downloader {
     private static URLQueueInterface urlQueue;
+    private static StorageBarrel storageBarrel;
 
     static {
         try {
             Registry registry = LocateRegistry.getRegistry("localhost", 1099);
             urlQueue = (URLQueueInterface) registry.lookup("URLQueue");
+            storageBarrel = (StorageBarrel) registry.lookup("StorageBarrel");
         } catch (Exception e) {
-            System.err.println("Error connecting to URLQueue: " + e.getMessage());
+            System.err.println("Error connecting to remote services: " + e.getMessage());
         }
     }
 
@@ -25,10 +28,11 @@ public class Downloader {
         try {
             Document doc = Jsoup.connect(url).get();
 
-            // Extract words and index them (simplified for now)
+            // Extract words and index them in StorageBarrel
             StringTokenizer tokenizer = new StringTokenizer(doc.text());
             while (tokenizer.hasMoreTokens()) {
-                System.out.println("Indexed word: " + tokenizer.nextToken());
+                String word = tokenizer.nextToken();
+                storageBarrel.addToIndex(word, url);
             }
 
             // Extract and add new links to the queue
