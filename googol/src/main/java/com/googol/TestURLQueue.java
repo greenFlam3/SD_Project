@@ -7,7 +7,7 @@ import com.googol.Queue.URLQueueInterface;
 public class TestURLQueue {
     public static void main(String[] args) {
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            Registry registry = LocateRegistry.getRegistry("localhost", 1088);
             URLQueueInterface queue = (URLQueueInterface) registry.lookup("URLQueue");
 
             queue.addURL("https://pt.wikipedia.org/wiki/Ferrari"); // URL de teste

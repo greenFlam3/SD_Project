@@ -6,8 +6,8 @@ import java.rmi.registry.Registry;
 public class StorageBarrelServer {
     public static void main(String[] args) {
         try {
-            int port = Integer.parseInt(args[0]); // Porta passada como argumento
-            int id = Integer.parseInt(args[1]);   // Identificador único do Storage Barrel
+            int port = 1099; //Integer.parseInt(args[0]); // Porta passada como argumento
+            int id = 44; //Integer.parseInt(args[1]);   // Identificador único do Storage Barrel
 
             StorageBarrel barrel = new StorageBarrelImpl(id);
             Registry registry = LocateRegistry.createRegistry(port);

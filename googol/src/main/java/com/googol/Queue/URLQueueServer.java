@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class URLQueueServer implements URLQueueInterface {
+public class URLQueueServer extends UnicastRemoteObject implements URLQueueInterface {
     private final Queue<String> queue = new ConcurrentLinkedQueue<>();
     private final Set<String> processedURLs = ConcurrentHashMap.newKeySet();  // URLs já processados
 
@@ -19,6 +19,7 @@ public class URLQueueServer implements URLQueueInterface {
 
     @Override
     public void addURL(String url) throws RemoteException {
+        System.out.println("Adding URL: " + url);
         if (!processedURLs.contains(url) && !queue.contains(url)) {  // Evita URLs duplicados
             queue.offer(url);
             System.out.println("URL added: " + url);
@@ -29,6 +30,7 @@ public class URLQueueServer implements URLQueueInterface {
 
     @Override
     public String getNextURL() throws RemoteException {
+        System.out.println("Getting next URL...");
         String url = queue.poll();
         if (url != null) {
             processedURLs.add(url);  // Marca URL como processado
@@ -54,9 +56,8 @@ public class URLQueueServer implements URLQueueInterface {
     public static void main(String[] args) {
         try {
             URLQueueServer server = new URLQueueServer();
-            URLQueueInterface stub = (URLQueueInterface) UnicastRemoteObject.exportObject(server, 0);
-            Registry registry = LocateRegistry.createRegistry(1099);
-            registry.rebind("URLQueue", stub);
+            Registry registry = LocateRegistry.createRegistry(1088);
+            registry.rebind("URLQueue", server);
             System.out.println("URLQueueServer is ready...");
         } catch (Exception e) {
             System.err.println("Error starting server: " + e.getMessage());

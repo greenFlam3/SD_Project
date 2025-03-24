@@ -16,9 +16,9 @@ public class Downloader {
 
     static {
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            Registry registry = LocateRegistry.getRegistry("localhost", 1088);
             urlQueue = (URLQueueInterface) registry.lookup("URLQueue");
-            storageBarrel = (StorageBarrel) registry.lookup("StorageBarrel");
+            storageBarrel = (StorageBarrel) LocateRegistry.getRegistry("localhost", 1099).lookup("StorageBarrel");
         } catch (Exception e) {
             System.err.println("Error connecting to remote services: " + e.getMessage());
         }
@@ -26,6 +26,7 @@ public class Downloader {
 
     public static void processURL(String url) {
         try {
+            System.out.println("Processing: " + url);
             Document doc = Jsoup.connect(url).get();
 
             // Extract words and index them in StorageBarrel
@@ -55,6 +56,7 @@ public class Downloader {
         try {
             while (!urlQueue.isEmpty()) {
                 String url = urlQueue.getNextURL();
+                System.out.println("Processing: " + url);
                 if (url != null) processURL(url);
             }
         } catch (Exception e) {
