@@ -36,11 +36,16 @@ public class Downloader {
                 storageBarrel.addToIndex(word, url);
             }
 
-            // Extract and add new links to the queue
+            // Extraer nuevos enlaces de la página
             Elements links = doc.select("a[href]");
             links.forEach(link -> {
                 try {
-                    urlQueue.addURL(link.absUrl("href"));
+                    String targetUrl = link.absUrl("href");
+                    // Añadir el enlace a la cola para procesarlo en el futuro
+                    urlQueue.addURL(targetUrl);
+                    // Registrar que la página actual (url) enlaza a targetUrl
+                    storageBarrel.addInboundLink(targetUrl, url);
+                    
                 } catch (Exception e) {
                     System.err.println("Error adding URL to queue: " + e.getMessage());
                 }
