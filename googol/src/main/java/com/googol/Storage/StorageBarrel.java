@@ -26,4 +26,14 @@ public interface StorageBarrel extends Remote {
 
     // Retorna um resumo da página com título e um trecho de texto
     PageInfo getPageSummary(String url) throws RemoteException;
+
+    // NEW: Registra un enlace entrante: linkingUrl enlaza a targetUrl
+    void addInboundLink(String targetUrl, String linkingUrl) throws RemoteException;
+    
+    // NEW: Devuelve la lista de URLs que enlazan a la URL dada (para consulta de enlaces entrantes)
+    Set<String> getInboundLinks(String url) throws RemoteException;
+    
+    // NEW: Busca una palabra y retorna los URLs ordenados por importancia (cantidad de enlaces entrantes)
+    Set<String> searchOrderedByRelevance(String word) throws RemoteException;
+}
 }
