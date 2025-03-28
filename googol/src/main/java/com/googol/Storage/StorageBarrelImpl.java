@@ -10,7 +10,7 @@ import java.util.Set;
 //NEW
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
-import com.googol.util.StopWords; // Se asume que ya existe esta clase de utilidades
+import com.googol.Util.StopWords; // Se asume que ya existe esta clase de utilidades
 
 public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBarrel {
 
@@ -68,24 +68,29 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
     }
 
     @Override
-    public void armazenarPagina(String url, String conteudo) throws RemoteException {
-        // Separamos el contenido en palabras (convertido a minúsculas)
-        String[] palavras = conteudo.toLowerCase().split("\\s+");
-        for (String palavra : palavras) {
-            // FILTRO: Solo indexamos la palabra si no es una stop word
-            if (!StopWords.isStopWord(palavra)) {
-                addToIndex(palavra, url);
-            }
+public void armazenarPagina(String url, String conteudo) throws RemoteException {
+    // Incrementar el contador de páginas indexadas
+    StopWords.incrementPageCount();
+    
+    // Separamos el contenido en palabras (convertido a minúsculas)
+    String[] palavras = conteudo.toLowerCase().split("\\s+");
+    for (String palavra : palavras) {
+        // Actualizamos el contador de esta palabra
+        StopWords.updateWord(palavra);
+        // Solo indexamos la palabra si no se considera stop word dinámicamente
+        if (!StopWords.isStopWord(palavra)) {
+            addToIndex(palavra, url);
         }
-
-        // Extraindo título e snippet
-        String title = conteudo.split("\\n")[0]; // Primeira linha como título
-        String snippet = conteudo.length() > 150 ? conteudo.substring(0, 150) + "..." : conteudo;
-        pageTitles.put(url, title);
-        pageSnippets.put(url, snippet);
-
-        System.out.println("[Barrel " + id + "] Page stored: " + url);
     }
+
+    // Extraemos título y snippet
+    String title = conteudo.split("\\n")[0]; // Primera línea como título
+    String snippet = conteudo.length() > 150 ? conteudo.substring(0, 150) + "..." : conteudo;
+    pageTitles.put(url, title);
+    pageSnippets.put(url, snippet);
+
+    System.out.println("[Barrel " + id + "] Page stored: " + url);
+}
 
     @Override
     public int getTotalPaginas() throws RemoteException {
@@ -118,13 +123,19 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
     // NUEVO: Búsqueda que retorna los URLs para una palabra, ordenados por importancia
     // (número de enlaces entrantes en orden descendente)
     @Override
-    public Set<String> searchOrderedByRelevance(String word) throws RemoteException {
-        Set<String> urls = search(word);
-        // Ordenamos usando el tamaño de inboundLinks
-        return urls.stream()
-                .sorted((u1, u2) -> Integer.compare(
+public Set<String> searchOrderedByRelevance(String word) throws RemoteException {
+    Set<String> urls = search(word);
+    // Ordenamos usando el tamaño de inboundLinks y capturamos RemoteException en la lambda
+    return urls.stream()
+            .sorted((u1, u2) -> {
+                try {
+                    return Integer.compare(
                         getInboundLinks(u2).size(),
-                        getInboundLinks(u1).size()))
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                        getInboundLinks(u1).size());
+                } catch (RemoteException e) {
+                    throw new RuntimeException(e);
+                }
+            })
+            .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }

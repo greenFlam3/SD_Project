@@ -36,4 +36,3 @@ public interface StorageBarrel extends Remote {
     // NEW: Busca una palabra y retorna los URLs ordenados por importancia (cantidad de enlaces entrantes)
     Set<String> searchOrderedByRelevance(String word) throws RemoteException;
 }
-}
