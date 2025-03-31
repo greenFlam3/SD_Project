@@ -31,7 +31,7 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
                     System.err.println("[Gateway] Erro ao conectar com StorageBarrel" + i + ": " + e.getMessage());
                 }
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.err.println("[Gateway] Falha ao conectar-se ao RMI Registry: " + e.getMessage());
         }
     }
@@ -60,5 +60,20 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
             }
         }
         return result;
+    }
+
+    /**
+     * Método que garante o funcionamento correto da comunicação com o RMI registry.
+     */
+    public static void main(String[] args) {
+        try {
+            GatewayImpl gateway = new GatewayImpl();
+            Registry registry = LocateRegistry.createRegistry(RMI_PORT);
+            registry.rebind("GatewayService", gateway);
+            System.out.println("[Gateway] Serviço de Gateway registrado no Registry.");
+        } catch (RemoteException e) {
+            System.err.println("[Gateway] Erro ao registrar o serviço de Gateway: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

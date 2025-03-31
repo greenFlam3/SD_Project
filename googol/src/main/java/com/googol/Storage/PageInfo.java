@@ -1,10 +1,12 @@
 package com.googol.Storage;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class PageInfo implements Serializable {
-    private String title;
-    private String snippet;
+    private static final long serialVersionUID = 1L;
+    private final String title;
+    private final String snippet;
 
     public PageInfo(String title, String snippet) {
         this.title = title;
@@ -20,7 +22,23 @@ public class PageInfo implements Serializable {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        PageInfo pageInfo = (PageInfo) obj;
+        return Objects.equals(title, pageInfo.title) && Objects.equals(snippet, pageInfo.snippet);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(title, snippet);
+    }
+
+    @Override
     public String toString() {
-        return "Title: " + title + "\\nSnippet: " + snippet;
+        return "PageInfo{" +
+               "title='" + title + '\'' +
+               ", snippet='" + snippet + '\'' +
+               '}';
     }
 }

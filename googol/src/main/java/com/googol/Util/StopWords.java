@@ -5,22 +5,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class StopWords {
 
-    // Contador global de palabras (clave: palabra, valor: número de ocurrencias)
+    // Contador global de palavras (chave: palavra, valor: número de ocorrências)
     private static final ConcurrentHashMap<String, AtomicInteger> wordCounts = new ConcurrentHashMap<>();
-    // Cantidad total de páginas indexadas (se debe actualizar cada vez que se indexa una página)
+    // Contador total de páginas indexadas
     private static final AtomicInteger totalPages = new AtomicInteger(0);
-    // Umbral de porcentaje (por ejemplo, 80% de las páginas)
+    // Porcentagem de corte (ex: 80% das páginas)
     private static final double THRESHOLD_PERCENT = 0.8;
 
     /**
-     * Se debe llamar a este método cada vez que se indexa una página.
+     * Chamar este método a cada vez que uma página é indexada.
      */
     public static void incrementPageCount() {
         totalPages.incrementAndGet();
     }
 
     /**
-     * Actualiza el contador para una palabra dada.
+     * Atualiza o contador para uma palavra específica.
      */
     public static void updateWord(String word) {
         word = word.toLowerCase();
@@ -28,16 +28,14 @@ public class StopWords {
     }
 
     /**
-     * Determina si una palabra es stop word basado en la frecuencia relativa en el corpus.
+     * Determina se uma palavra é uma stop word com base na frequência no corpus.
      */
     public static boolean isStopWord(String word) {
         word = word.toLowerCase();
         int count = wordCounts.getOrDefault(word, new AtomicInteger(0)).get();
         int pages = totalPages.get();
-        // Si se ha indexado al menos una página y la palabra aparece en un porcentaje alto de ellas, se considera stop word
-        if (pages > 0 && ((double) count / pages) >= THRESHOLD_PERCENT) {
-            return true;
-        }
-        return false;
+
+        // Se o número de páginas indexadas for maior que 0 e a palavra aparece em um grande percentual delas, é considerada stop word
+        return pages > 0 && ((double) count / pages) >= THRESHOLD_PERCENT;
     }
 }

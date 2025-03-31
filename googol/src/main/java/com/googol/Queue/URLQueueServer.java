@@ -19,18 +19,18 @@ public class URLQueueServer extends UnicastRemoteObject implements URLQueueInter
 
     @Override
     public void addURL(String url) throws RemoteException {
-        System.out.println("Adding URL: " + url);
+        System.out.println("Adicionando URL: " + url);
         if (!processedURLs.contains(url) && !queue.contains(url)) {  // Evita URLs duplicados
             queue.offer(url);
-            System.out.println("URL added: " + url);
+            System.out.println("URL adicionada: " + url);
         } else {
-            System.out.println("URL already in queue or processed: " + url);
+            System.out.println("URL já está na fila ou já foi processada: " + url);
         }
     }
 
     @Override
     public String getNextURL() throws RemoteException {
-        System.out.println("Getting next URL...");
+        System.out.println("Obtendo próxima URL...");
         String url = queue.poll();
         if (url != null) {
             processedURLs.add(url);  // Marca URL como processado
@@ -55,10 +55,18 @@ public class URLQueueServer extends UnicastRemoteObject implements URLQueueInter
 
     public static void main(String[] args) {
         try {
-            URLQueueServer server = new URLQueueServer();
+            // Criar ou usar o Registry no porto 1088
             Registry registry = LocateRegistry.createRegistry(1088);
+            
+            // Criar e registrar o URLQueueServer
+            URLQueueServer server = new URLQueueServer();
             registry.rebind("URLQueue", server);
             System.out.println("URLQueueServer is ready...");
+            
+            // Manter o servidor ativo
+            while (true) {
+                Thread.sleep(10000);
+            }
         } catch (Exception e) {
             System.err.println("Error starting server: " + e.getMessage());
             e.printStackTrace();
