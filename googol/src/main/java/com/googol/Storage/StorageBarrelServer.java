@@ -2,37 +2,23 @@ package com.googol.Storage;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import com.googol.Gateway.GatewayImpl;
 
 public class StorageBarrelServer {
+    private static final int RMI_PORT = 1099;
+    private static final int NUMBER_OF_BARRELS = 3;
+
     public static void main(String[] args) {
         try {
-            // Crear o usar el Registry en el puerto 1099
-            Registry registry = LocateRegistry.createRegistry(1099);
-            
-            // Número de réplicas que queremos (puede ser 2, 3, o más)
-            int numberOfBarrels = 3;
-            
-            // Crear y registrar cada StorageBarrelImpl
-            for (int i = 1; i <= numberOfBarrels; i++) {
+            Registry registry = LocateRegistry.createRegistry(RMI_PORT);
+            for (int i = 1; i <= NUMBER_OF_BARRELS; i++) {
                 StorageBarrelImpl barrel = new StorageBarrelImpl(i);
-                String bindingName = "StorageBarrel" + i;
-                registry.rebind(bindingName, barrel);
-                System.out.println("[Barrel " + i + "] registrado como " + bindingName);
+                String name = "StorageBarrel" + i;
+                registry.rebind(name, barrel);
+                System.out.println("[StorageBarrelServer] " + name + " registrado.");
             }
-            
-            // Opcional: si queremos que la Gateway se inicie en este mismo proceso,
-            // podemos crearla y registrarla.
-            GatewayImpl gateway = new GatewayImpl();  // Nota: usa el constructor que hace lookup
-            registry.rebind("GatewayService", gateway);
-            System.out.println("GatewayService registrado en el Registry.");
-
-            // Mantener el servidor activo
-            while (true) {
-                Thread.sleep(10000);
-                // Opcional: imprimir estado o estadísticas de las réplicas.
-            }
-        } catch(Exception e) {
+            System.out.println("[StorageBarrelServer] Todos los barrels están listos. Esperando conexiones...");
+            Thread.sleep(Long.MAX_VALUE);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
