@@ -1,39 +1,26 @@
 package com.googol.Gateway;
 
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
-
 import com.googol.Storage.StorageBarrel;
 
+/**
+ * API de Gateway que delega en una lista de StorageBarrel pasada por constructor.
+ */
 public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
+    private static final long serialVersionUID = 1L;
+    private final List<StorageBarrel> storageBarrels;
 
-    private static final int NUMBER_OF_BARRELS = 3;
-    private static final int RMI_PORT = 1055;
-    private List<StorageBarrel> storageBarrels;
-
-    public GatewayImpl() throws RemoteException {
+    /**
+     * Constructor: recibe directamente la lista de StorageBarrel
+     * en lugar de hacer lookup interno.
+     */
+    public GatewayImpl(List<StorageBarrel> barrels) throws RemoteException {
         super();
-        storageBarrels = new ArrayList<>();
-        try {
-            Registry registry = LocateRegistry.getRegistry("localhost", RMI_PORT);
-            for (int i = 1; i <= NUMBER_OF_BARRELS; i++) {
-                try {
-                    StorageBarrel barrel = (StorageBarrel) registry.lookup("StorageBarrel" + i);
-                    storageBarrels.add(barrel);
-                    System.out.println("[Gateway] Conectado ao " + "StorageBarrel" + i);
-                } catch (Exception e) {
-                    System.err.println("[Gateway] Erro ao conectar com StorageBarrel" + i + ": " + e.getMessage());
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("[Gateway] Falha ao conectar-se ao RMI Registry: " + e.getMessage());
-        }
+        this.storageBarrels = barrels;
     }
 
     @Override
@@ -42,9 +29,9 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
         for (StorageBarrel barrel : storageBarrels) {
             try {
                 barrel.armazenarPagina(url, combinedContent);
-                System.out.println("[Gateway] Página indexada em um StorageBarrel.");
+                System.out.println("[Gateway] Página indexada en " + barrel);
             } catch (RemoteException e) {
-                System.err.println("[Gateway] Erro ao indexar em um barrel: " + e.getMessage());
+                System.err.println("[Gateway] Error al indexar en un barrel: " + e.getMessage());
             }
         }
     }
@@ -56,24 +43,9 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
             try {
                 result.addAll(barrel.search(query));
             } catch (RemoteException e) {
-                System.err.println("[Gateway] Erro ao buscar em um barrel: " + e.getMessage());
+                System.err.println("[Gateway] Error al buscar en un barrel: " + e.getMessage());
             }
         }
         return result;
-    }
-
-    /**
-     * Método que garante o funcionamento correto da comunicação com o RMI registry.
-     */
-    public static void main(String[] args) {
-        try {
-            GatewayImpl gateway = new GatewayImpl();
-            Registry registry = LocateRegistry.createRegistry(RMI_PORT);
-            registry.rebind("GatewayService", gateway);
-            System.out.println("[Gateway] Serviço de Gateway registrado no Registry.");
-        } catch (RemoteException e) {
-            System.err.println("[Gateway] Erro ao registrar o serviço de Gateway: " + e.getMessage());
-            e.printStackTrace();
-        }
     }
 }
