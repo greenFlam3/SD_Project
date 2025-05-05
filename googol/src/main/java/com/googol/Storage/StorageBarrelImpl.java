@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 import com.googol.Util.StopWords;
@@ -35,20 +36,15 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
 
     @Override
     public Set<String> search(String query) throws RemoteException {
-        System.out.println("[DEBUG] Pesquisa recebida: " + query);
-        System.out.println("[DEBUG] Índice atual: " + invertedIndex);
-    
-        Set<String> results = new HashSet<>();
-        for (Map.Entry<String, Set<String>> entry : invertedIndex.entrySet()) {
-            System.out.println("[DEBUG] Verificando palavra: " + entry.getKey() + " -> URLs: " + entry.getValue());
-            if (entry.getKey().equalsIgnoreCase(query)) {
-                results.addAll(entry.getValue());
-                System.out.println("[DEBUG] Página encontrada: " + entry.getValue());
-            }
-        }
-    
+        // Normalizar la consulta
+        String key = query.toLowerCase().trim();
+        System.out.println("[StorageBarrel" + id + "] Buscando término: '" + key + "'");
+        // Obtener el conjunto de URLs para esa clave
+        Set<String> results = invertedIndex.getOrDefault(key, new CopyOnWriteArraySet<>());
         if (results.isEmpty()) {
-            System.out.println("[DEBUG] Nenhum resultado encontrado para: " + query);
+            System.out.println("[StorageBarrel" + id + "] Ningún resultado para: '" + key + "'");
+        } else {
+            System.out.println("[StorageBarrel" + id + "] Resultados: " + results);
         }
         return results;
     }
@@ -76,27 +72,19 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
     }
 
     @Override
-    public void armazenarPagina(String url, String conteudo) throws RemoteException {
-        StopWords.incrementPageCount();
-        
-        System.out.println("[DEBUG] Armazenando URL: " + url);
-        System.out.println("[DEBUG] Conteúdo recebido: " + conteudo);
-    
-        String[] palavras = conteudo.toLowerCase().split("\\s+");
-        for (String palavra : palavras) {
-            StopWords.updateWord(palavra);
-            if (!StopWords.isStopWord(palavra)) {
-                addToIndex(palavra, url);
-                System.out.println("[DEBUG] Palavra indexada: " + palavra);
-            }
+    public void armazenarPagina(String url, String content) throws RemoteException {
+        System.out.println("[StorageBarrel" + id + "] Armazenando página: " + url);
+        // Partir el contenido en palabras, normalizar a minúsculas y hacer trim
+        String[] words = content.split("\\W+");
+        for (String w : words) {
+            if (w == null || w.isBlank()) continue;
+            String key = w.toLowerCase().trim();
+            // Añadir la URL al conjunto asociado a esa palabra
+            invertedIndex
+                .computeIfAbsent(key, k -> new CopyOnWriteArraySet<>())
+                .add(url);
         }
-    
-        String title = conteudo.split("\\n")[0]; 
-        String snippet = conteudo.length() > 150 ? conteudo.substring(0, 150) + "..." : conteudo;
-        pageTitles.put(url, title);
-        pageSnippets.put(url, snippet);
-    
-        System.out.println("[DEBUG] Página armazenada com sucesso.");
+        System.out.println("[StorageBarrel" + id + "] Índice tras almacenar: " + invertedIndex);
     }
 
     @Override
