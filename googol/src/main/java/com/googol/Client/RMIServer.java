@@ -29,8 +29,8 @@ public class RMIServer {
             }
             
             // Criar a instância do Gateway que buscará todas as réplicas
-            GatewayImpl gateway = new GatewayImpl(); // GatewayImpl buscará "StorageBarrel1", "StorageBarrel2", etc.
-            registry.rebind("GatewayService", gateway);
+            //GatewayImpl gateway = new GatewayImpl(); // GatewayImpl buscará "StorageBarrel1", "StorageBarrel2", etc.
+            //registry.rebind("GatewayService", gateway);
             
             System.out.println("Servidor RMI em funcionamento. GatewayService está registrado.");
             
