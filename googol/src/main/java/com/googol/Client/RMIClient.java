@@ -1,5 +1,7 @@
 package com.googol.Client;
 
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
@@ -9,12 +11,13 @@ import com.googol.Gateway.GatewayService;
 
 public class RMIClient {
     private static final String HOST = "localhost";
+    // Modificación: ajustar al puerto donde realmente corre GatewayService (1055)
     private static final int PORT = 1055;
     private static final String SERVICE_NAME = "GatewayService";
 
     public static void main(String[] args) {
         try (Scanner scanner = new Scanner(System.in)) {
-            // Conectar al registro RMI
+            // 1) Conectar al RMI Registry del Gateway
             Registry registry = LocateRegistry.getRegistry(HOST, PORT);
             GatewayService gateway = (GatewayService) registry.lookup(SERVICE_NAME);
 
@@ -29,11 +32,11 @@ public class RMIClient {
 
                 if (!scanner.hasNextInt()) {
                     System.out.println("Entrada no válida. Intente de nuevo.");
-                    scanner.next(); // Consumir entrada inválida
+                    scanner.next();
                     continue;
                 }
                 int option = scanner.nextInt();
-                scanner.nextLine(); // Consumir nueva línea
+                scanner.nextLine();
 
                 switch (option) {
                     case 1:
@@ -80,8 +83,18 @@ public class RMIClient {
                         System.out.println("Opción no válida.");
                 }
             }
+
+        } catch (NotBoundException e) {
+            // Servicio no encontrado en el registry
+            System.err.println("[RMIClient] Servicio '" + SERVICE_NAME + "' no encontrado en " + HOST + ":" + PORT);
+            System.err.println("Asegúrate de haber arrancado GatewayServer en ese puerto.");
+        } catch (RemoteException e) {
+            // Error de conexión RMI
+            System.err.println("[RMIClient] Error de conexión RMI: " + e.getMessage());
+            e.printStackTrace();
         } catch (Exception e) {
-            System.err.println("Error en el cliente RMI: " + e.getMessage());
+            // Otros errores
+            System.err.println("[RMIClient] Error inesperado: " + e.getMessage());
             e.printStackTrace();
         }
     }
