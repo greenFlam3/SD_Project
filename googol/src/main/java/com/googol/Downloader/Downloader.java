@@ -1,13 +1,17 @@
 package com.googol.Downloader;
 
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.StringTokenizer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import com.googol.Queue.URLQueueInterface;
@@ -19,73 +23,92 @@ public class Downloader {
 
     static {
         try {
-            // Conectar a la URLQueue
-            Registry registryQueue = LocateRegistry.getRegistry("localhost", 1088);
-            urlQueue = (URLQueueInterface) registryQueue.lookup("URLQueue");
+            // connect to queue
+            Registry rq = LocateRegistry.getRegistry("localhost", 1088);
+            urlQueue = (URLQueueInterface) rq.lookup("URLQueue");
 
-            // Conectar a las StorageBarrels (suponiendo que se registraron con nombres "StorageBarrel1", "StorageBarrel2", "StorageBarrel3")
-            Registry registryStorage = LocateRegistry.getRegistry("localhost", 1099);
-            int numberOfBarrels = 3; // Número de réplicas que tienes
-            for (int i = 1; i <= numberOfBarrels; i++) {
-                StorageBarrel barrel = (StorageBarrel) registryStorage.lookup("StorageBarrel" + i);
-                storageBarrels.add(barrel);
+            // connect to barrels
+            Registry rs = LocateRegistry.getRegistry("localhost", 1099);
+            for (int i = 1; i <= 3; i++) {
+                storageBarrels.add(
+                  (StorageBarrel) rs.lookup("StorageBarrel" + i)
+                );
             }
         } catch (Exception e) {
-            System.err.println("Error connecting to remote services: " + e.getMessage());
+            throw new RuntimeException("Downloader init failed: " + e.getMessage(), e);
         }
     }
 
+    // single‐URL processing logic unchanged
     public static void processURL(String url) {
         try {
             System.out.println("Processing: " + url);
             Document doc = Jsoup.connect(url).get();
+            String text = doc.text();
 
-            // Extraer palabras y enviarlas a indexar a cada StorageBarrel
-            StringTokenizer tokenizer = new StringTokenizer(doc.text());
-            while (tokenizer.hasMoreTokens()) {
-                String word = tokenizer.nextToken();
-                for (StorageBarrel barrel : storageBarrels) {
-                    try {
-                        barrel.addToIndex(word, url);
-                    } catch (Exception ex) {
-                        System.err.println("Error indexing word '" + word + "' in a barrel: " + ex.getMessage());
-                    }
+            // ——— Index the page in each barrel —————————
+            for (StorageBarrel barrel : storageBarrels) {
+                barrel.armazenarPagina(url, text);
+                System.out.println("[Downloader] indexed in " + barrel + ": " + url);
+            }
+
+            // ——— Crawl outlinks and enqueue them ——————
+            // Select all <a href="..."> links in the document
+            Elements links = doc.select("a[href]");
+            for (Element link : links) {
+                String target = link.absUrl("href");
+                if (target.isBlank()) continue;
+                try {
+                    // Add new URL to the queue for later processing
+                    urlQueue.addURL(target);
+                    System.out.println("[Downloader] enqueued: " + target);
+                } catch (RemoteException e) {
+                    System.err.println("[Downloader] failed to enqueue " + target + ": " + e.getMessage());
                 }
             }
 
-            // Procesar enlaces: agregar a la cola y registrar inbound links
-            Elements links = doc.select("a[href]");
-            links.forEach(link -> {
-                try {
-                    String targetUrl = link.absUrl("href");
-                    urlQueue.addURL(targetUrl);
-                    for (StorageBarrel barrel : storageBarrels) {
-                        try {
-                            barrel.addInboundLink(targetUrl, url);
-                        } catch (Exception ex) {
-                            System.err.println("Error registering inbound link for '" + targetUrl + "': " + ex.getMessage());
-                        }
-                    }
-                } catch (Exception e) {
-                    System.err.println("Error adding URL to queue: " + e.getMessage());
-                }
-            });
-
-            System.out.println("Processed: " + url);
         } catch (Exception e) {
-            System.err.println("Error accessing URL: " + url);
+            System.err.println("[Downloader] error on " + url + ": " + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
+        final int THREAD_COUNT = 5;
+        ThreadPoolExecutor pool = (ThreadPoolExecutor) Executors.newFixedThreadPool(THREAD_COUNT);
+    
         try {
-            while (!urlQueue.isEmpty()) {
+            while (true) {
+                // 1) Try to dequeue the next URL
                 String url = urlQueue.getNextURL();
-                System.out.println("Processing: " + url);
-                if (url != null) processURL(url);
+                if (url != null) {
+                    // 2) Got one—submit it for processing
+                    pool.execute(() -> processURL(url));
+                } else {
+                    // 3) No URL right now. Are we really done?
+                    boolean queueEmpty     = urlQueue.isEmpty();           // remote queue
+                    boolean noActiveTasks  = pool.getActiveCount() == 0;   // local workers
+    
+                    if (queueEmpty && noActiveTasks) {
+                        // nothing left anywhere
+                        break;
+                    }
+                    // otherwise, wait a bit for new URLs to arrive
+                    Thread.sleep(500);
+                }
             }
         } catch (Exception e) {
-            System.err.println("Downloader encountered an error: " + e.getMessage());
+            System.err.println("[Downloader] main loop error: " + e.getMessage());
+        } finally {
+            pool.shutdown();
+            try {
+                if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+                    pool.shutdownNow();
+                }
+            } catch (InterruptedException ie) {
+                pool.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+            System.out.println("[Downloader] all tasks finished.");
         }
     }
-}
+}    
