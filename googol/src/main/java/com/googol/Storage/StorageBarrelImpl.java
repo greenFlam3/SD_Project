@@ -10,8 +10,11 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
+import com.googol.Util.StopWords;
+
 public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBarrel {
 
+    private static final long serialVersionUID = 1L;
     private final Map<String, Set<String>> invertedIndex;
     private final Map<String, String> pageTitles;
     private final Map<String, String> pageSnippets;
@@ -29,15 +32,15 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
 
     @Override
     public void addToIndex(String word, String url) throws RemoteException {
-        invertedIndex.computeIfAbsent(word.toLowerCase(), k -> new HashSet<>()).add(url);
+        invertedIndex
+            .computeIfAbsent(word.toLowerCase(), k -> new HashSet<>())
+            .add(url);
     }
 
     @Override
     public Set<String> search(String query) throws RemoteException {
-        // Normalizar la consulta
         String key = query.toLowerCase().trim();
         System.out.println("[StorageBarrel" + id + "] Searching term: '" + key + "'");
-        // Obtener el conjunto de URLs para esa clave
         Set<String> results = invertedIndex.getOrDefault(key, new CopyOnWriteArraySet<>());
         if (results.isEmpty()) {
             System.out.println("[StorageBarrel" + id + "] No results for: '" + key + "'");
@@ -60,6 +63,9 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
             } else {
                 result.retainAll(urls);
             }
+            if (result.isEmpty()) {
+                break;
+            }
         }
         return result != null ? result : Set.of();
     }
@@ -71,18 +77,37 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
 
     @Override
     public void armazenarPagina(String url, String content) throws RemoteException {
+        // Update total page count for stop-word statistics
+        StopWords.incrementPageCount();
+
         System.out.println("[StorageBarrel" + id + "] Storing page: " + url);
-        // Partir el contenido en palabras, normalizar a minúsculas y hacer trim
         String[] words = content.split("\\W+");
         for (String w : words) {
             if (w == null || w.isBlank()) continue;
             String key = w.toLowerCase().trim();
-            // Añadir la URL al conjunto asociado a esa palabra
+
+            // Update word frequency and skip if it's a stop-word
+            StopWords.updateWord(key);
+            if (StopWords.isStopWord(key)) {
+                System.out.println("[StorageBarrel" + id + "] Skipping stop word: '" + key + "'");
+                continue;
+            }
+
+            // Index the word
             invertedIndex
                 .computeIfAbsent(key, k -> new CopyOnWriteArraySet<>())
                 .add(url);
+            System.out.println("[StorageBarrel" + id + "] Indexed word: '" + key + "'");
         }
-        System.out.println("[StorageBarrel" + id + "] Index after storing: " + invertedIndex);
+
+        // Store page title and snippet
+        String title = content.split("\\n")[0];
+        String snippet = content.length() > 150
+            ? content.substring(0, 150) + "..."
+            : content;
+        pageTitles.put(url, title);
+        pageSnippets.put(url, snippet);
+        System.out.println("[StorageBarrel" + id + "] Page stored with title and snippet.");
     }
 
     @Override
@@ -103,7 +128,9 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
 
     @Override
     public void addInboundLink(String targetUrl, String linkingUrl) throws RemoteException {
-        inboundLinks.computeIfAbsent(targetUrl, k -> new HashSet<>()).add(linkingUrl);
+        inboundLinks
+            .computeIfAbsent(targetUrl, k -> new HashSet<>())
+            .add(linkingUrl);
     }
 
     @Override
@@ -114,18 +141,17 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
     @Override
     public Set<String> searchOrderedByRelevance(String word) throws RemoteException {
         Set<String> urls = invertedIndex.getOrDefault(word.toLowerCase(), Set.of());
-        
         return urls.stream()
-                .sorted((u1, u2) -> {
-                    try {
-                        return Integer.compare(
-                                getInboundLinks(u2).size(),
-                                getInboundLinks(u1).size());
-                    } catch (RemoteException e) {
-                        e.printStackTrace(); // Log do erro
-                        return 0; // Mantém a ordem inalterada em caso de erro
-                    }
-                })
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-    }    
+            .sorted((u1, u2) -> {
+                try {
+                    return Integer.compare(
+                        getInboundLinks(u2).size(),
+                        getInboundLinks(u1).size());
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                    return 0;
+                }
+            })
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
 }

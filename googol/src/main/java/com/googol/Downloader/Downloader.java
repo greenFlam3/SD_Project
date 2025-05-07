@@ -48,7 +48,10 @@ public class Downloader {
 
             // ——— Index the page in each barrel —————————
             for (StorageBarrel barrel : storageBarrels) {
-                barrel.armazenarPagina(url, text);
+                String pageTitle = doc.title();
+                String body      = doc.body().text();
+                // join title + body with a newline so StorageBarrelImpl.split picks it up:
+                barrel.armazenarPagina(url, pageTitle + "\n" + body);
                 System.out.println("[Downloader] indexed in " + barrel + ": " + url);
             }
 

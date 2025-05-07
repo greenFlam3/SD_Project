@@ -59,7 +59,6 @@ public class RMIClient {
                             break;
                         }
 
-                        // Invocar el método remoto para indexar la página
                         gateway.indexPage(url, title, text);
                         System.out.println("Page indexed successfully.");
                         break;
@@ -78,7 +77,7 @@ public class RMIClient {
                             break;
                         }
 
-                        // Pagination setup
+                        // Pagination setup with title and snippet display
                         List<String> all = new ArrayList<>(results);
                         int pageSize = 10;
                         int totalPages = (all.size() + pageSize - 1) / pageSize;
@@ -87,25 +86,26 @@ public class RMIClient {
                         while (true) {
                             int start = currentPage * pageSize;
                             int end = Math.min(start + pageSize, all.size());
-                            System.out.printf("\nShowing results %d–%d of %d (Page %d/%d):\n",
-                                start+1, end, all.size(), currentPage+1, totalPages);
+                            System.out.printf(
+                                "\nShowing results %d–%d of %d (Page %d/%d):\n",
+                                start + 1, end, all.size(), currentPage + 1, totalPages
+                            );
 
                             for (int i = start; i < end; i++) {
                                 String resultUrl = all.get(i);
                                 PageInfo info = gateway.getPageSummary(resultUrl);
-                                System.out.println("\nTitle:  " + info.getTitle());
-                                System.out.println("URL:      " + resultUrl);
-                                System.out.println("Snippet:  " + info.getSnippet());
+                                System.out.println("\nTitle:   " + info.getTitle());
+                                System.out.println("URL:     " + resultUrl);
+                                System.out.println("Snippet: " + info.getSnippet());
                             }
 
-                            // Navigation prompt
-                            System.out.print("\nCommands: [n]ext, [p]rev, [e]xit: ");
+                            System.out.print("\nCommands: [n]ext, [p]revious, [e]xit: ");
                             String cmd = scanner.nextLine().trim().toLowerCase();
-                            if (cmd.equals("n") && currentPage < totalPages-1) {
+                            if ("n".equals(cmd) && currentPage < totalPages - 1) {
                                 currentPage++;
-                            } else if (cmd.equals("p") && currentPage > 0) {
+                            } else if ("p".equals(cmd) && currentPage > 0) {
                                 currentPage--;
-                            } else if (cmd.equals("e")) {
+                            } else if ("e".equals(cmd)) {
                                 break;
                             } else {
                                 System.out.println("Invalid command or no more pages.");
@@ -117,61 +117,57 @@ public class RMIClient {
                         System.out.print("Enter multiple terms (separated by spaces): ");
                         String multi = scanner.nextLine().trim();
                         if (multi.isEmpty()) {
-                            System.out.println("Error: la consulta no puede estar vacía.");
+                            System.out.println("Error: Query cannot be empty.");
                             break;
                         }
-                        // Parse into a Set<String>
                         Set<String> terms = new HashSet<>(Arrays.asList(multi.split("\\s+")));
-
-                        // Call the new RPC
                         Set<String> andResults = gateway.searchMultipleTerms(terms);
                         if (andResults.isEmpty()) {
-                            System.out.println("No pages contain *all* of those terms.");
+                            System.out.println("No pages contain all of those terms.");
                             break;
                         }
                         System.out.println("\nAND-search results:");
                         for (String resultUrl : andResults) {
                             PageInfo info = gateway.getPageSummary(resultUrl);
-                            System.out.println("\nTitle:  " + info.getTitle());
-                            System.out.println("URL:      " + resultUrl);
-                            System.out.println("Snippet:  " + info.getSnippet());
+                            System.out.println("\nTitle:   " + info.getTitle());
+                            System.out.println("URL:     " + resultUrl);
+                            System.out.println("Snippet: " + info.getSnippet());
                         }
                         break;
-                    
+
                     case 4:
                         System.out.println("\nTop 10 search terms:");
                         List<String> top = gateway.getTopSearches();
                         top.forEach(System.out::println);
 
                         System.out.println("\nBarrel statistics:");
-                        List<BarrelStat> bs = gateway.getBarrelStats();
-                        for (BarrelStat s : bs) {
+                        List<BarrelStat> stats = gateway.getBarrelStats();
+                        for (BarrelStat s : stats) {
                             System.out.printf(
-                            "%s — index size: %d pages; avgSearch=%.2fms; avgIndex=%.2fms\n",
-                            s.getName(), s.getIndexSize(), s.getAvgSearchMs(), s.getAvgIndexMs()
+                                "%s — index size: %d pages; avgSearch=%.2fms; avgIndex=%.2fms\n",
+                                s.getName(), s.getIndexSize(), s.getAvgSearchMs(), s.getAvgIndexMs()
                             );
                         }
                         break;
-                    
+
                     case 5:
                         System.out.println("Exiting...");
                         return;
-                    
+
                     default:
                         System.out.println("Invalid option. Please try again.");
                 }
             }
 
         } catch (NotBoundException e) {
-            // Servicio no encontrado en el registry
-            System.err.println("[RMIClient] Service '" + SERVICE_NAME + "' not found at " + HOST + ":" + PORT);
+            System.err.println(
+                "[RMIClient] Service '" + SERVICE_NAME + "' not found at " + HOST + ":" + PORT
+            );
             System.err.println("Make sure GatewayServer is running on that port.");
         } catch (RemoteException e) {
-            // Error de conexión RMI
             System.err.println("[RMIClient] RMI connection error: " + e.getMessage());
             e.printStackTrace();
         } catch (Exception e) {
-            // Otros errores
             System.err.println("[RMIClient] Unexpected error: " + e.getMessage());
             e.printStackTrace();
         }
