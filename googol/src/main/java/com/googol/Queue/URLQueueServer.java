@@ -11,11 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Servidor RMI para la cola de URLs, con creación o reutilización del Registry.
+ * RMI server for the URL queue, with creation or reuse of the Registry.
  */
 public class URLQueueServer extends UnicastRemoteObject implements URLQueueInterface {
     private static final long serialVersionUID = 1L;
-    private static final int RMI_PORT = 1088;  // Puerto destinado para URLQueue
+    private static final int RMI_PORT = 1088;  // Port designated for URLQueue
 
     private final Queue<String> queue = new ConcurrentLinkedQueue<>();
     private final Set<String> processedURLs = ConcurrentHashMap.newKeySet();
@@ -26,18 +26,18 @@ public class URLQueueServer extends UnicastRemoteObject implements URLQueueInter
 
     @Override
     public void addURL(String url) throws RemoteException {
-        System.out.println("Adicionando URL: " + url);
+        System.out.println("Adding URL: " + url);
         if (!processedURLs.contains(url) && !queue.contains(url)) {
             queue.offer(url);
-            System.out.println("URL adicionada: " + url);
+            System.out.println("URL added: " + url);
         } else {
-            System.out.println("URL ya está en la fila o fue procesada: " + url);
+            System.out.println("URL already in the queue or processed: " + url);
         }
     }
 
     @Override
     public String getNextURL() throws RemoteException {
-        System.out.println("Obteniendo próxima URL...");
+        System.out.println("Retrieving next URL...");
         String url = queue.poll();
         if (url != null) {
             processedURLs.add(url);
@@ -64,25 +64,25 @@ public class URLQueueServer extends UnicastRemoteObject implements URLQueueInter
         try {
             Registry registry;
             try {
-                // Intentar crear un nuevo RMI Registry en el puerto 1088
+                // Attempt to create a new RMI Registry on port 1088
                 registry = LocateRegistry.createRegistry(RMI_PORT);
-                System.out.println("[URLQueueServer] RMI Registry creado en el puerto " + RMI_PORT);
+                System.out.println("[URLQueueServer] RMI Registry created on port " + RMI_PORT);
             } catch (ExportException e) {
-                // Si ya existe, reutilizar el Registry existente
+                // If one already exists, reuse the existing registry
                 registry = LocateRegistry.getRegistry(RMI_PORT);
-                System.out.println("[URLQueueServer] Usando Registry existente en el puerto " + RMI_PORT);
+                System.out.println("[URLQueueServer] Using existing registry on port " + RMI_PORT);
             }
 
-            // Registrar este servicio URLQueue en el Registry
+            // Register this URLQueue service in the registry
             URLQueueServer server = new URLQueueServer();
             registry.rebind("URLQueue", server);
-            System.out.println("[URLQueueServer] URLQueueServer listo y registrado como 'URLQueue'.");
+            System.out.println("[URLQueueServer] URLQueueServer ready and registered as 'URLQueue'.");
 
-            // Mantener el servidor activo indefinidamente
+            // Keep the server alive indefinitely
             Thread.sleep(Long.MAX_VALUE);
 
         } catch (Exception e) {
-            System.err.println("[URLQueueServer] Error al inicializar: " + e.getMessage());
+            System.err.println("[URLQueueServer] Initialization error: " + e.getMessage());
             e.printStackTrace();
         }
     }

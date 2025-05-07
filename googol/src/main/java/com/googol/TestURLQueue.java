@@ -14,7 +14,7 @@ public class TestURLQueue {
             queue.addURL("https://pt.wikipedia.org/wiki/Ferrari"); // URL de teste
 
             System.out.println("URL added to queue!");
-            System.out.println("Tamaño ahora: " + queue.getQueueSize());
+            System.out.println("Size right now: " + queue.getQueueSize());
 
         } catch (Exception e) {
             e.printStackTrace();

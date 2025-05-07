@@ -17,29 +17,28 @@ import com.googol.Storage.PageInfo;
 
 public class RMIClient {
     private static final String HOST = "localhost";
-    // Modificación: ajustar al puerto donde realmente corre GatewayService (1055)
     private static final int PORT = 1055;
     private static final String SERVICE_NAME = "GatewayService";
 
     public static void main(String[] args) {
         try (Scanner scanner = new Scanner(System.in)) {
-            // 1) Conectar al RMI Registry del Gateway
+            // Connect to the Gateway RMI registry
             Registry registry = LocateRegistry.getRegistry(HOST, PORT);
             GatewayService gateway = (GatewayService) registry.lookup(SERVICE_NAME);
 
-            System.out.println("Cliente RMI del motor de búsqueda");
+            System.out.println("Search Engine RMI Client");
 
             while (true) {
-                System.out.println("\nOpciones:");
-                System.out.println("1. Indexar una página (simulación)");
+                System.out.println("\nOptions:");
+                System.out.println("1. Index a page (simulation)");
                 System.out.println("2. Simple search (one term)");
                 System.out.println("3. AND search (multiple terms)");
                 System.out.println("4. Show statistics");
-                System.out.println("5. Salir");
-                System.out.print("Seleccione opción: ");
+                System.out.println("5. Exit");
+                System.out.print("Select option: ");
 
                 if (!scanner.hasNextInt()) {
-                    System.out.println("Entrada no válida. Intente de nuevo.");
+                    System.out.println("Invalid input. Please enter a number.");
                     scanner.next();
                     continue;
                 }
@@ -48,28 +47,28 @@ public class RMIClient {
 
                 switch (option) {
                     case 1:
-                        System.out.print("Introduce URL: ");
+                        System.out.print("Enter URL: ");
                         String url = scanner.nextLine().trim();
-                        System.out.print("Introduce título: ");
+                        System.out.print("Enter title: ");
                         String title = scanner.nextLine().trim();
-                        System.out.print("Introduce contenido de la página: ");
+                        System.out.print("Enter page content: ");
                         String text = scanner.nextLine().trim();
 
                         if (url.isEmpty() || title.isEmpty() || text.isEmpty()) {
-                            System.out.println("Error: Todos los campos deben estar llenos.");
+                            System.out.println("Error: All fields must be filled.");
                             break;
                         }
 
                         // Invocar el método remoto para indexar la página
                         gateway.indexPage(url, title, text);
-                        System.out.println("Página indexada.");
+                        System.out.println("Page indexed successfully.");
                         break;
 
                     case 2:
-                        System.out.print("Introduce términos de búsqueda: ");
+                        System.out.print("Enter search term: ");
                         String query = scanner.nextLine().trim();
                         if (query.isEmpty()) {
-                            System.out.println("Error: La consulta no puede estar vacía.");
+                            System.out.println("Error: Search term cannot be empty.");
                             break;
                         }
 
@@ -79,7 +78,7 @@ public class RMIClient {
                             break;
                         }
 
-                        // --- Pagination setup ---
+                        // Pagination setup
                         List<String> all = new ArrayList<>(results);
                         int pageSize = 10;
                         int totalPages = (all.size() + pageSize - 1) / pageSize;
@@ -94,7 +93,7 @@ public class RMIClient {
                             for (int i = start; i < end; i++) {
                                 String resultUrl = all.get(i);
                                 PageInfo info = gateway.getPageSummary(resultUrl);
-                                System.out.println("\nTítulo:  " + info.getTitle());
+                                System.out.println("\nTitle:  " + info.getTitle());
                                 System.out.println("URL:      " + resultUrl);
                                 System.out.println("Snippet:  " + info.getSnippet());
                             }
@@ -114,9 +113,8 @@ public class RMIClient {
                         }
                         break;
 
-
                     case 3:
-                        System.out.print("Introduce varios términos (separados por espacios): ");
+                        System.out.print("Enter multiple terms (separated by spaces): ");
                         String multi = scanner.nextLine().trim();
                         if (multi.isEmpty()) {
                             System.out.println("Error: la consulta no puede estar vacía.");
@@ -131,10 +129,10 @@ public class RMIClient {
                             System.out.println("No pages contain *all* of those terms.");
                             break;
                         }
-                        System.out.println("Resultados AND‐search:");
+                        System.out.println("\nAND-search results:");
                         for (String resultUrl : andResults) {
                             PageInfo info = gateway.getPageSummary(resultUrl);
-                            System.out.println("\nTítulo:  " + info.getTitle());
+                            System.out.println("\nTitle:  " + info.getTitle());
                             System.out.println("URL:      " + resultUrl);
                             System.out.println("Snippet:  " + info.getSnippet());
                         }
@@ -156,25 +154,25 @@ public class RMIClient {
                         break;
                     
                     case 5:
-                        System.out.println("Saliendo...");
+                        System.out.println("Exiting...");
                         return;
                     
                     default:
-                        System.out.println("Opción no válida.");
+                        System.out.println("Invalid option. Please try again.");
                 }
             }
 
         } catch (NotBoundException e) {
             // Servicio no encontrado en el registry
-            System.err.println("[RMIClient] Servicio '" + SERVICE_NAME + "' no encontrado en " + HOST + ":" + PORT);
-            System.err.println("Asegúrate de haber arrancado GatewayServer en ese puerto.");
+            System.err.println("[RMIClient] Service '" + SERVICE_NAME + "' not found at " + HOST + ":" + PORT);
+            System.err.println("Make sure GatewayServer is running on that port.");
         } catch (RemoteException e) {
             // Error de conexión RMI
-            System.err.println("[RMIClient] Error de conexión RMI: " + e.getMessage());
+            System.err.println("[RMIClient] RMI connection error: " + e.getMessage());
             e.printStackTrace();
         } catch (Exception e) {
             // Otros errores
-            System.err.println("[RMIClient] Error inesperado: " + e.getMessage());
+            System.err.println("[RMIClient] Unexpected error: " + e.getMessage());
             e.printStackTrace();
         }
     }

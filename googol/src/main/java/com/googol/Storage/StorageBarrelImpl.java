@@ -10,8 +10,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
-import com.googol.Util.StopWords;
-
 public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBarrel {
 
     private final Map<String, Set<String>> invertedIndex;
@@ -38,13 +36,13 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
     public Set<String> search(String query) throws RemoteException {
         // Normalizar la consulta
         String key = query.toLowerCase().trim();
-        System.out.println("[StorageBarrel" + id + "] Buscando término: '" + key + "'");
+        System.out.println("[StorageBarrel" + id + "] Searching term: '" + key + "'");
         // Obtener el conjunto de URLs para esa clave
         Set<String> results = invertedIndex.getOrDefault(key, new CopyOnWriteArraySet<>());
         if (results.isEmpty()) {
-            System.out.println("[StorageBarrel" + id + "] Ningún resultado para: '" + key + "'");
+            System.out.println("[StorageBarrel" + id + "] No results for: '" + key + "'");
         } else {
-            System.out.println("[StorageBarrel" + id + "] Resultados: " + results);
+            System.out.println("[StorageBarrel" + id + "] Results: " + results);
         }
         return results;
     }
@@ -73,7 +71,7 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
 
     @Override
     public void armazenarPagina(String url, String content) throws RemoteException {
-        System.out.println("[StorageBarrel" + id + "] Armazenando página: " + url);
+        System.out.println("[StorageBarrel" + id + "] Storing page: " + url);
         // Partir el contenido en palabras, normalizar a minúsculas y hacer trim
         String[] words = content.split("\\W+");
         for (String w : words) {
@@ -84,7 +82,7 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
                 .computeIfAbsent(key, k -> new CopyOnWriteArraySet<>())
                 .add(url);
         }
-        System.out.println("[StorageBarrel" + id + "] Índice tras almacenar: " + invertedIndex);
+        System.out.println("[StorageBarrel" + id + "] Index after storing: " + invertedIndex);
     }
 
     @Override

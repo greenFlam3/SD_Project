@@ -30,9 +30,9 @@ public class GatewayServer {
                 try {
                     StorageBarrel barrel = (StorageBarrel) storageRegistry.lookup("StorageBarrel" + i);
                     barrels.add(barrel);
-                    System.out.println("[GatewayServer] Conectado a StorageBarrel" + i);
+                    System.out.println("[GatewayServer] Connected to StorageBarrel" + i);
                 } catch (Exception ex) {
-                    System.err.println("[GatewayServer] Error al conectar con StorageBarrel" + i + ": " + ex.getMessage());
+                    System.err.println("[GatewayServer] Error connecting to StorageBarrel" + i + ": " + ex.getMessage());
                 }
             }
 
@@ -42,10 +42,10 @@ public class GatewayServer {
             // 4) Registrar el servicio GatewayService en otro Registry
             Registry gatewayRegistry = LocateRegistry.createRegistry(GATEWAY_RMI_PORT);
             gatewayRegistry.rebind("GatewayService", gateway);
-            System.out.println("[GatewayServer] GatewayService registrado en el Registry (puerto " + GATEWAY_RMI_PORT + ").");
+            System.out.println("[GatewayServer] GatewayService registered in the Registry (port " + GATEWAY_RMI_PORT + ").");
 
         } catch (RemoteException e) {
-            System.err.println("[GatewayServer] Error al inicializar el servicio: " + e.getMessage());
+            System.err.println("[GatewayServer] Error initializing the service: " + e.getMessage());
             e.printStackTrace();
         }
     }

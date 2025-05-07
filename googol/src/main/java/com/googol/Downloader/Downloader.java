@@ -35,14 +35,14 @@ public class Downloader {
                 );
             }
         } catch (Exception e) {
-            throw new RuntimeException("Downloader init failed: " + e.getMessage(), e);
+            throw new RuntimeException("Downloader initialization failed: " + e.getMessage(), e);
         }
     }
 
     // single‐URL processing logic unchanged
     public static void processURL(String url) {
         try {
-            System.out.println("Processing: " + url);
+            System.out.println("Processing URL: " + url);
             Document doc = Jsoup.connect(url).get();
             String text = doc.text();
 
@@ -68,7 +68,7 @@ public class Downloader {
             }
 
         } catch (Exception e) {
-            System.err.println("[Downloader] error on " + url + ": " + e.getMessage());
+            System.err.println("[Downloader] Error processing URL " + url + ": " + e.getMessage());
         }
     }
 

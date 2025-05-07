@@ -5,39 +5,38 @@ import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.googol.Gateway.GatewayImpl;
 import com.googol.Storage.StorageBarrel;
 import com.googol.Storage.StorageBarrelImpl;
 
 public class RMIServer {
     private static final int RMI_PORT = 1055;
-    private static final int NUMBER_OF_BARRELS = 3; // Pode ser ajustado dinamicamente
+    private static final int NUMBER_OF_BARRELS = 3; // Can be adjusted dynamically
 
     public static void main(String[] args) {
         try {
-            // Criar o registro RMI na porta especificada
+            // Create the RMI registry on the specified port
             Registry registry = LocateRegistry.createRegistry(RMI_PORT);
             
             List<StorageBarrel> barrels = new ArrayList<>();
             
-            // Criar e registrar cada StorageBarrel
+            // Create and register each StorageBarrel
             for (int i = 1; i <= NUMBER_OF_BARRELS; i++) {
                 StorageBarrelImpl barrel = new StorageBarrelImpl(i);
                 registry.rebind("StorageBarrel" + i, barrel);
                 barrels.add(barrel);
-                System.out.println("[Barrel " + i + "] registrado no Registry.");
+                System.out.println("[Barrel " + i + "] registered in the Registry.");
             }
             
-            // Criar a instância do Gateway que buscará todas as réplicas
-            //GatewayImpl gateway = new GatewayImpl(); // GatewayImpl buscará "StorageBarrel1", "StorageBarrel2", etc.
-            //registry.rebind("GatewayService", gateway);
+            // Create the Gateway instance that will look up all replicas
+            //GatewayImpl gateway = new GatewayImpl(); // GatewayImpl will look up "StorageBarrel1", "StorageBarrel2", etc.
+            //registry.rebind("GatewayService", gateway)
             
-            System.out.println("Servidor RMI em funcionamento. GatewayService está registrado.");
+            System.out.println("RMI Server is running. GatewayService is registered.");
             
-            // Mantém o servidor ativo
+            // Keep the server alive indefinitely
             while (true) {
                 Thread.sleep(10000);
-                // Opcional: imprimir o estado global, ex.: quantidade de páginas indexadas em cada barrel.
+                // Optional: print global status, e.g.: number of pages indexed in each barrel.
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -14,9 +14,9 @@ public class StorageBarrelServer {
                 StorageBarrelImpl barrel = new StorageBarrelImpl(i);
                 String name = "StorageBarrel" + i;
                 registry.rebind(name, barrel);
-                System.out.println("[StorageBarrelServer] " + name + " registrado.");
+                System.out.println("[StorageBarrelServer] " + name + " registered.");
             }
-            System.out.println("[StorageBarrelServer] Todos los barrels están listos. Esperando conexiones...");
+            System.out.println("[StorageBarrelServer] All barrels are ready. Awaiting connections...");
             Thread.sleep(Long.MAX_VALUE);
         } catch (Exception e) {
             e.printStackTrace();
