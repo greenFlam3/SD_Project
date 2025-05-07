@@ -13,6 +13,7 @@ import java.util.Set;
 
 import com.googol.Gateway.BarrelStat;
 import com.googol.Gateway.GatewayService;
+import com.googol.Queue.URLQueueInterface;
 import com.googol.Storage.PageInfo;
 
 public class RMIClient {
@@ -61,6 +62,16 @@ public class RMIClient {
 
                         gateway.indexPage(url, title, text);
                         System.out.println("Page indexed successfully.");
+
+                        // 2) Also enqueue it for the downloader
+                        try {
+                            Registry queueReg = LocateRegistry.getRegistry(HOST, 1088);
+                            URLQueueInterface queue = (URLQueueInterface) queueReg.lookup("URLQueue");
+                            queue.addURL(url);
+                            System.out.println("URL queued for crawling.");
+                            } catch (NotBoundException | RemoteException e) {
+                                System.err.println("Failed to enqueue URL: " + e.getMessage());
+                            }
                         break;
 
                     case 2:
