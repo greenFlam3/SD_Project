@@ -64,6 +64,13 @@ public class Downloader {
                 try {
                     // Add new URL to the queue for later processing
                     urlQueue.addURL(target);
+                    for (StorageBarrel barrel : storageBarrels) {
+                        try {
+                            barrel.addInboundLink(target, url);  // link from current page to target
+                        } catch (RemoteException e) {
+                            System.err.println("[Downloader] Failed to register inbound link: " + e.getMessage());
+                        }
+                    }
                     System.out.println("[Downloader] enqueued: " + target);
                 } catch (RemoteException e) {
                     System.err.println("[Downloader] failed to enqueue " + target + ": " + e.getMessage());

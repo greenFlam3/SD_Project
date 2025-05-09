@@ -3,6 +3,8 @@ package com.googol.Gateway;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +32,48 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
 
     private final List<StorageBarrel> storageBarrels;
 
+    private final List<RetryEntry> retryQueue = new ArrayList<>();
+
+    private static class RetryEntry {
+        StorageBarrel barrel;
+        String url;
+        String content;
+
+        RetryEntry(StorageBarrel barrel, String url, String content) {
+            this.barrel = barrel;
+            this.url = url;
+            this.content = content;
+        }
+    }
+
     public GatewayImpl(List<StorageBarrel> barrels) throws RemoteException {
         super();
         this.storageBarrels = new ArrayList<>(barrels);
         for (StorageBarrel b : barrels) {
             barrelMetrics.put(b, new Metrics());
         }
+
+        Thread retryThread = new Thread(() -> {
+            while (true) {
+                synchronized (retryQueue) {
+                    retryQueue.removeIf(entry -> {
+                        try {
+                            entry.barrel.armazenarPagina(entry.url, entry.content);
+                            System.out.println("[Retry] Success on " + entry.barrel + " for URL: " + entry.url);
+                            return true;
+                        } catch (RemoteException e) {
+                            System.err.println("[Retry] Still failing on " + entry.barrel + " for " + entry.url);
+                            return false;
+                        }
+                    });
+                }
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException ignored) {}
+            }
+            });
+            retryThread.setDaemon(true);
+            retryThread.start();
     }
 
     @Override
@@ -72,7 +110,10 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
             if (!ack) {
                 System.err.println("[Gateway] Permanent failure on " + barrel);
                 failed.add(barrel);
-            }
+                synchronized (retryQueue) {
+                    retryQueue.add(new RetryEntry(barrel, url, combined));
+                }
+            }            
         }
 
         if (failed.size() == storageBarrels.size()) {
@@ -80,51 +121,50 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
         }
     }
 
-    public Set<String> search(String query) throws RemoteException {
-        String key = query.toLowerCase().trim();
-        searchCounts
-          .computeIfAbsent(key, k -> new AtomicInteger())
-          .incrementAndGet();
+    @Override
+    public List<String> smartSearch(String userQuery) throws RemoteException {
+        Set<String> terms = Arrays.stream(userQuery.toLowerCase().split("\\s+"))
+                                .filter(s -> !s.isBlank())
+                                .collect(Collectors.toSet());
 
-        Set<String> result = new HashSet<>();
-        Set<StorageBarrel> failed = new HashSet<>();
+        if (terms.isEmpty()) return List.of();
 
-        for (StorageBarrel barrel : storageBarrels) {
-            boolean success = false;
-            int attempts = 3;
+        List<StorageBarrel> shuffledBarrels = new ArrayList<>(storageBarrels);
+        Collections.shuffle(shuffledBarrels);
 
-            while (!success && attempts-- > 0) {
-                try {
-                    // — Start timing search call
-                    Metrics m = barrelMetrics.get(barrel);
-                    long t0 = System.nanoTime();
+        Set<String> combined = null;
 
-                    Set<String> part = barrel.search(key);
-
-                    long duration = System.nanoTime() - t0;
-                    m.totalSearchNs.addAndGet(duration);
-                    m.searchCalls.incrementAndGet();
-                    // — End timing search call
-
-                    result.addAll(part);
-                    success = true;
-                } catch (RemoteException e) {
-                    System.err.println("[Gateway] Search error on " 
-                        + barrel + ", retrying... (" + attempts + " left)");
-                    try { Thread.sleep(200); } catch (InterruptedException ignored) {}
+        for (StorageBarrel barrel : shuffledBarrels) {
+            Set<String> barrelResult;
+            try {
+                if (terms.size() == 1) {
+                    barrelResult = barrel.search(terms.iterator().next());
+                } else {
+                    barrelResult = barrel.searchMultipleTerms(terms);
                 }
+            } catch (RemoteException e) {
+                System.err.println("[Gateway] Search failed on barrel " + barrel);
+                continue;
             }
 
-            if (!success) {
-                System.err.println("[Gateway] Permanent search failure on " + barrel);
-                failed.add(barrel);
-            }
+            if (combined == null) combined = new HashSet<>(barrelResult);
+            else combined.addAll(barrelResult);
         }
 
-        if (failed.size() == storageBarrels.size()) {
-            throw new RemoteException("Search failed on all replicas for query: " + query);
-        }
-        return result;
+        if (combined == null || combined.isEmpty()) return List.of();
+
+        return combined.stream()
+            .sorted((u1, u2) -> {
+                int in1 = 0, in2 = 0;
+                for (StorageBarrel barrel : shuffledBarrels) {
+                    try {
+                        in1 += barrel.getInboundLinks(u1).size();
+                        in2 += barrel.getInboundLinks(u2).size();
+                    } catch (RemoteException ignored) {}
+                }
+                return Integer.compare(in2, in1);
+            })
+            .toList();
     }
 
     @Override
@@ -146,34 +186,6 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
           .limit(10)
           .map(e -> e.getKey() + ": " + e.getValue().get())
           .collect(Collectors.toList());
-    }
-    
-    @Override
-    public Set<String> searchMultipleTerms(Set<String> terms) throws RemoteException {
-        Set<String> result = null;
-
-        for (StorageBarrel barrel : storageBarrels) {
-            Set<String> urlsForThisBarrel;
-            try {
-                urlsForThisBarrel = barrel.searchMultipleTerms(terms);
-            } catch (RemoteException e) {
-                // if one replica is down, skip it
-                System.err.println("[Gateway] Replica failed on AND-search: " + e.getMessage());
-                continue;
-            }
-            if (result == null) {
-                // first replica: initialize with its full set
-                result = new HashSet<>(urlsForThisBarrel);
-            } else {
-                // intersect: keep only URLs present in both
-                result.retainAll(urlsForThisBarrel);
-            }
-            // if intersection ever becomes empty, we can stop early
-            if (result.isEmpty()) break;
-        }
-
-        // if all replicas failed to respond, treat as empty
-        return result != null ? result : Set.of();
     }
 
     @Override
