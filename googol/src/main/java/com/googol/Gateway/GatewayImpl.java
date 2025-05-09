@@ -123,35 +123,43 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
 
     @Override
     public List<String> smartSearch(String userQuery) throws RemoteException {
+        // 1) Split & normalize the user’s input
         Set<String> terms = Arrays.stream(userQuery.toLowerCase().split("\\s+"))
                                 .filter(s -> !s.isBlank())
                                 .collect(Collectors.toSet());
-
+        System.out.println("[Gateway] Terms to search: " + terms);
         if (terms.isEmpty()) return List.of();
 
+        // 2) Randomize barrel order for load‐balancing
         List<StorageBarrel> shuffledBarrels = new ArrayList<>(storageBarrels);
         Collections.shuffle(shuffledBarrels);
 
-        Set<String> combined = null;
-
+        // 3) Collect union across all barrels
+        Set<String> combined = new HashSet<>();
         for (StorageBarrel barrel : shuffledBarrels) {
+            System.out.println("[Gateway] Searching in barrel: " + barrel);
             Set<String> barrelResult;
             try {
                 if (terms.size() == 1) {
+                    // single‐term → simple search
                     barrelResult = barrel.search(terms.iterator().next());
                 } else {
+                    // multi‐term → AND within that barrel
                     barrelResult = barrel.searchMultipleTerms(terms);
                 }
+                System.out.println("[Gateway] Barrel result: " + barrelResult);
             } catch (RemoteException e) {
-                System.err.println("[Gateway] Search failed on barrel " + barrel);
+                System.err.println("[Gateway] Search failed on barrel " + barrel + ": " + e.getMessage());
                 continue;
             }
 
-            if (combined == null) combined = new HashSet<>(barrelResult);
-            else combined.addAll(barrelResult);
+            combined.addAll(barrelResult);
+            System.out.println("[Gateway] Combined result so far: " + combined);
         }
 
-        if (combined == null || combined.isEmpty()) return List.of();
+        if (combined.isEmpty()) {
+            return List.of();
+        }
 
         return combined.stream()
             .sorted((u1, u2) -> {
@@ -160,7 +168,7 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
                     try {
                         in1 += barrel.getInboundLinks(u1).size();
                         in2 += barrel.getInboundLinks(u2).size();
-                    } catch (RemoteException ignored) {}
+                    } catch (RemoteException ignored) { }
                 }
                 return Integer.compare(in2, in1);
             })

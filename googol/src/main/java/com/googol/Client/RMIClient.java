@@ -69,28 +69,54 @@ public class RMIClient {
                             }
                         break;
 
-                        case 2:
-                            System.out.print("Enter search query: ");
-                            String queryInput = scanner.nextLine().trim();
-                            if (queryInput.isEmpty()) {
-                                System.out.println("Query cannot be empty.");
-                                break;
-                            }
-                        
-                            List<String> results = gateway.smartSearch(queryInput);
-                            if (results.isEmpty()) {
-                                System.out.println("No pages found.");
-                                break;
-                            }
-                        
-                            System.out.println("\nSearch Results (ranked by relevance):");
-                            for (String resultUrl : results) {
+                    case 2:
+                        System.out.print("Enter search query: ");
+                        String queryInput = scanner.nextLine().trim();
+                        if (queryInput.isEmpty()) {
+                            System.out.println("Query cannot be empty.");
+                            break;
+                        }
+
+                        List<String> results = gateway.smartSearch(queryInput);
+                        if (results.isEmpty()) {
+                            System.out.println("No pages found.");
+                            break;
+                        }
+
+                        int pageSize = 10;
+                        int totalPages = (results.size() + pageSize - 1) / pageSize;
+                        int currentPage = 0;
+
+                        while (true) {
+                            int start = currentPage * pageSize;
+                            int end = Math.min(start + pageSize, results.size());
+
+                            System.out.printf(
+                                "\nShowing results %d–%d of %d (Page %d/%d):\n",
+                                start + 1, end, results.size(), currentPage + 1, totalPages
+                            );
+
+                            for (int i = start; i < end; i++) {
+                                String resultUrl = results.get(i);
                                 PageInfo info = gateway.getPageSummary(resultUrl);
                                 System.out.println("\nTitle:   " + info.getTitle());
                                 System.out.println("URL:     " + resultUrl);
                                 System.out.println("Snippet: " + info.getSnippet());
                             }
-                            break;                    
+
+                            System.out.print("\nCommands: [n]ext, [p]revious, [e]xit: ");
+                            String cmd = scanner.nextLine().trim().toLowerCase();
+                            if ("n".equals(cmd) && currentPage < totalPages - 1) {
+                                currentPage++;
+                            } else if ("p".equals(cmd) && currentPage > 0) {
+                                currentPage--;
+                            } else if ("e".equals(cmd)) {
+                                break;
+                            } else {
+                                System.out.println("Invalid command or no more pages.");
+                            }
+                        }
+                        break;              
 
                     case 3:
                         System.out.println("\nTop 10 search terms:");
