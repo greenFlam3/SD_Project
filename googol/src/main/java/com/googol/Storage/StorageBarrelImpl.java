@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
@@ -15,7 +16,7 @@ import com.googol.Util.StopWords;
 public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBarrel {
 
     private static final long serialVersionUID = 1L;
-    private final Map<String, Set<String>> invertedIndex;
+    private final ConcurrentHashMap<String, Set<String>> invertedIndex;
     private final Map<String, String> pageTitles;
     private final Map<String, String> pageSnippets;
     private final Map<String, Set<String>> inboundLinks;
@@ -24,10 +25,14 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
     public StorageBarrelImpl(int id) throws RemoteException {
         super();
         this.id = id;
-        this.invertedIndex = new HashMap<>();
+        this.invertedIndex = new ConcurrentHashMap<>();
         this.pageTitles = new HashMap<>();
         this.pageSnippets = new HashMap<>();
         this.inboundLinks = new HashMap<>();
+    }
+
+    public int getId() {
+        return this.id;
     }
 
     @Override
@@ -40,6 +45,7 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
     @Override
     public Set<String> search(String query) throws RemoteException {
         String key = query.toLowerCase().trim();
+        StopWords.updateSearchTerm(key);
         System.out.println("[StorageBarrel" + id + "] Searching term: '" + key + "'");
         Set<String> results = invertedIndex.getOrDefault(key, new CopyOnWriteArraySet<>());
         if (results.isEmpty()) {
@@ -112,11 +118,13 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
 
     @Override
     public int getTotalPaginas() throws RemoteException {
+        synchronized (invertedIndex) {
         Set<String> allUrls = new HashSet<>();
         for (Set<String> urls : invertedIndex.values()) {
             allUrls.addAll(urls);
         }
         return allUrls.size();
+        }
     }
 
     @Override
@@ -153,5 +161,22 @@ public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBar
                 }
             })
             .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    // Debug method to print stored pages and their titles/snippets
+    public void debugPrintStoredPages() {
+        System.out.println("=== DEBUG: Stored Pages ===");
+
+        if (pageTitles.isEmpty()) {
+            System.out.println("No pages stored.");
+            return;
+        }
+
+        for (String url : pageTitles.keySet()) {
+            System.out.println("URL: " + url);
+            System.out.println("Title: " + pageTitles.get(url));
+            System.out.println("Snippet: " + pageSnippets.getOrDefault(url, "No Snippet Available"));
+            System.out.println("========================================");
+        }
     }
 }

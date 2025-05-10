@@ -128,6 +128,7 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
                                 .filter(s -> !s.isBlank())
                                 .collect(Collectors.toSet());
         System.out.println("[Gateway] Terms to search: " + terms);
+        terms.forEach(com.googol.Util.StopWords::updateSearchTerm);
         if (terms.isEmpty()) return List.of();
 
         // 2) Shuffle for load-balancing
@@ -204,11 +205,7 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
 
     @Override
     public List<String> getTopSearches() throws RemoteException {
-        return searchCounts.entrySet().stream()
-          .sorted((a, b) -> b.getValue().get() - a.getValue().get())
-          .limit(10)
-          .map(e -> e.getKey() + ": " + e.getValue().get())
-          .collect(Collectors.toList());
+        return com.googol.Util.StopWords.getTop10SearchTerms();
     }
 
     @Override
