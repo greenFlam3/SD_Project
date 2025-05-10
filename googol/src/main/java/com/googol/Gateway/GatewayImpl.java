@@ -123,52 +123,67 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
 
     @Override
     public List<String> smartSearch(String userQuery) throws RemoteException {
-        // 1) Split & normalize the user’s input
+        // 1) Normalize & split into terms
         Set<String> terms = Arrays.stream(userQuery.toLowerCase().split("\\s+"))
                                 .filter(s -> !s.isBlank())
                                 .collect(Collectors.toSet());
         System.out.println("[Gateway] Terms to search: " + terms);
         if (terms.isEmpty()) return List.of();
 
-        // 2) Randomize barrel order for load‐balancing
-        List<StorageBarrel> shuffledBarrels = new ArrayList<>(storageBarrels);
-        Collections.shuffle(shuffledBarrels);
+        // 2) Shuffle for load-balancing
+        List<StorageBarrel> barrels = new ArrayList<>(storageBarrels);
+        Collections.shuffle(barrels);
 
-        // 3) Collect union across all barrels
-        Set<String> combined = new HashSet<>();
-        for (StorageBarrel barrel : shuffledBarrels) {
-            System.out.println("[Gateway] Searching in barrel: " + barrel);
-            Set<String> barrelResult;
-            try {
-                if (terms.size() == 1) {
-                    // single‐term → simple search
-                    barrelResult = barrel.search(terms.iterator().next());
-                } else {
-                    // multi‐term → AND within that barrel
-                    barrelResult = barrel.searchMultipleTerms(terms);
+        Set<String> combined;
+
+        if (terms.size() == 1) {
+            // SINGLE-TERM: union of each barrel.search(...)
+            combined = new HashSet<>();
+            String single = terms.iterator().next();
+            for (StorageBarrel barrel : barrels) {
+                System.out.println("[Gateway] single-term search on: " + barrel);
+                try {
+                    Set<String> part = barrel.search(single);
+                    System.out.println("[Gateway] barrel result: " + part);
+                    combined.addAll(part);
+                } catch (RemoteException e) {
+                    System.err.println("[Gateway] failed on barrel " + barrel + ": " + e.getMessage());
                 }
-                System.out.println("[Gateway] Barrel result: " + barrelResult);
-            } catch (RemoteException e) {
-                System.err.println("[Gateway] Search failed on barrel " + barrel + ": " + e.getMessage());
-                continue;
             }
-
-            combined.addAll(barrelResult);
-            System.out.println("[Gateway] Combined result so far: " + combined);
+        } else {
+            // MULTI-TERM: intersect of each barrel.searchMultipleTerms(...)
+            combined = null;
+            for (StorageBarrel barrel : barrels) {
+                System.out.println("[Gateway] multi-term search on: " + barrel);
+                try {
+                    Set<String> part = barrel.searchMultipleTerms(terms);
+                    System.out.println("[Gateway] barrel result: " + part);
+                    if (combined == null) {
+                        combined = new HashSet<>(part);
+                    } else {
+                        combined.retainAll(part);
+                    }
+                    // early exit if empty
+                    if (combined.isEmpty()) break;
+                } catch (RemoteException e) {
+                    System.err.println("[Gateway] failed on barrel " + barrel + ": " + e.getMessage());
+                }
+            }
+            if (combined == null) combined = Set.of();
         }
 
-        if (combined.isEmpty()) {
-            return List.of();
-        }
+        System.out.println("[Gateway] Combined result: " + combined);
+        if (combined.isEmpty()) return List.of();
 
+        // 3) Sort by total inbound-link count (desc)
         return combined.stream()
             .sorted((u1, u2) -> {
                 int in1 = 0, in2 = 0;
-                for (StorageBarrel barrel : shuffledBarrels) {
+                for (StorageBarrel barrel : barrels) {
                     try {
                         in1 += barrel.getInboundLinks(u1).size();
                         in2 += barrel.getInboundLinks(u2).size();
-                    } catch (RemoteException ignored) { }
+                    } catch (RemoteException ignored) {}
                 }
                 return Integer.compare(in2, in1);
             })
