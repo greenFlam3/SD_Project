@@ -1,4 +1,4 @@
-package com.googol.Web.Shared;
+package com.googol.Gateway;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;

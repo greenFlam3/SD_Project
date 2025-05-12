@@ -7,7 +7,6 @@ import java.rmi.registry.Registry;
 import java.util.List;
 import java.util.Scanner;
 
-import com.googol.Gateway.BarrelStat;
 import com.googol.Gateway.GatewayService;
 import com.googol.Queue.URLQueueInterface;
 import com.googol.Storage.PageInfo;
@@ -124,13 +123,13 @@ public class RMIClient {
                         top.forEach(System.out::println);
 
                         System.out.println("\nBarrel statistics:");
-                        List<BarrelStat> stats = gateway.getBarrelStats();
-                        for (BarrelStat s : stats) {
-                            System.out.printf(
-                                "%s — index size: %d pages; avgSearch=%.2fms; avgIndex=%.2fms\n",
-                                s.getName(), s.getIndexSize(), s.getAvgSearchMs(), s.getAvgIndexMs()
-                            );
-                        }
+                        //List<BarrelStat> stats = gateway.getBarrelStats();
+                        //for (BarrelStat s : stats) {
+                        //    System.out.printf(
+                        //        "%s — index size: %d pages; avgSearch=%.2fms; avgIndex=%.2fms\n",
+                        //        s.getName(), s.getIndexSize(), s.getAvgSearchMs(), s.getAvgIndexMs()
+                        //    );
+                        //}
                         break;
 
                     case 4:

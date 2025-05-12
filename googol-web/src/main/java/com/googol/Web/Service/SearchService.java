@@ -7,10 +7,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.googol.Gateway.GatewayService;
+import com.googol.Gateway.PageInfo;
 import com.googol.Web.Model.SearchResult;
-import com.googol.Web.Shared.GatewayService;
-import com.googol.Web.Shared.PageInfo;
-
 
 @Service
 public class SearchService {
@@ -18,7 +17,7 @@ public class SearchService {
     private GatewayService gateway;
 
     public SearchService() throws Exception {
-        gateway = (GatewayService) Naming.lookup("rmi://localhost:1099/GatewayService");
+        gateway = (GatewayService) Naming.lookup("rmi://localhost:1055/GatewayService");
     }
 
     public List<SearchResult> search(String query) throws RemoteException {
@@ -27,7 +26,7 @@ public class SearchService {
 
         for (String url : urls) {
             PageInfo info = gateway.getPageSummary(url);
-            SearchResult result = new SearchResult(info.getTitle(), url, info.getCitation());
+            SearchResult result = new SearchResult(info.getTitle(), url, info.getSnippet());
             results.add(result);
         }
 

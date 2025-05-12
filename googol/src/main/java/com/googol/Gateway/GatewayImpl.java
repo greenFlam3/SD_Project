@@ -208,30 +208,30 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
         return com.googol.Util.StopWords.getTop10SearchTerms();
     }
 
-    @Override
-    public List<BarrelStat> getBarrelStats() throws RemoteException {
-        List<BarrelStat> stats = new ArrayList<>();
-        for (Map.Entry<StorageBarrel, Metrics> entry : barrelMetrics.entrySet()) {
-            StorageBarrel barrel = entry.getKey();
-            Metrics m          = entry.getValue();
+    //@Override
+    //public List<BarrelStat> getBarrelStats() throws RemoteException {
+    //    List<BarrelStat> stats = new ArrayList<>();
+    //    for (Map.Entry<StorageBarrel, Metrics> entry : barrelMetrics.entrySet()) {
+    //        StorageBarrel barrel = entry.getKey();
+    //        Metrics m          = entry.getValue();
 
             // RPC call to get number of indexed pages
-            int size = barrel.getTotalPaginas();
+    //        int size = barrel.getTotalPaginas();
 
-            double avgSearchMs = m.searchCalls.get() == 0
-                ? 0
-                : (m.totalSearchNs.get()  / 1_000_000.0) / m.searchCalls.get();
-            double avgIndexMs = m.indexCalls.get() == 0
-                ? 0
-                : (m.totalIndexNs.get()   / 1_000_000.0) / m.indexCalls.get();
+    //        double avgSearchMs = m.searchCalls.get() == 0
+    //            ? 0
+    //            : (m.totalSearchNs.get()  / 1_000_000.0) / m.searchCalls.get();
+    //        double avgIndexMs = m.indexCalls.get() == 0
+    //            ? 0
+    //            : (m.totalIndexNs.get()   / 1_000_000.0) / m.indexCalls.get();
 
-            stats.add(new BarrelStat(
-                barrel.toString(),
-                size,
-                avgSearchMs,
-                avgIndexMs
-            ));
-        }
-        return stats;
-    }
+    //        stats.add(new BarrelStat(
+    //            barrel.toString(),
+    //            size,
+    //            avgSearchMs,
+    //            avgIndexMs
+    //        ));
+    //    }
+    //    return stats;
+    //}
 }

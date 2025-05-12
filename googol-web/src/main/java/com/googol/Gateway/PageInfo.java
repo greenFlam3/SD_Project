@@ -1,4 +1,4 @@
-package com.googol.Web.Shared;
+package com.googol.Gateway;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -17,7 +17,7 @@ public class PageInfo implements Serializable {
         return title;
     }
 
-    public String getCitation() {
+    public String getSnippet() {
         return snippet;
     }
 
