@@ -12,6 +12,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 import com.googol.Util.StopWords;
+import com.googol.Gateway.PageInfo;
 
 public class StorageBarrelImpl extends UnicastRemoteObject implements StorageBarrel {
 

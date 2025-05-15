@@ -3,6 +3,7 @@ package com.googol.Storage;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Set;
+import com.googol.Gateway.PageInfo;
 
 public interface StorageBarrel extends Remote {
 

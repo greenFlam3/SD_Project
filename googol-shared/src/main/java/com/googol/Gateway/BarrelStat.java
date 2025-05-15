@@ -4,34 +4,32 @@ import java.io.Serializable;
 
 public class BarrelStat implements Serializable {
     private static final long serialVersionUID = 1L;
+
     private String barrelId;
     private int indexedPages;
-    private double averageResponseTime;
+    private double averageSearchMs;
+    private double averageIndexMs;
 
-    public BarrelStat(String barrelId, int indexedPages, double averageResponseTime) {
+    public BarrelStat(String barrelId, int indexedPages, double averageSearchMs, double averageIndexMs) {
         this.barrelId = barrelId;
         this.indexedPages = indexedPages;
-        this.averageResponseTime = averageResponseTime;
+        this.averageSearchMs = averageSearchMs;
+        this.averageIndexMs = averageIndexMs;
     }
 
-    public String getBarrelId() {
+    public String getName() {
         return barrelId;
     }
 
-    public int getIndexedPages() {
+    public int getIndexSize() {
         return indexedPages;
     }
 
-    public double getAverageResponseTime() {
-        return averageResponseTime;
+    public double getAvgSearchMs() {
+        return averageSearchMs;
     }
 
-    @Override
-    public String toString() {
-        return "BarrelStat{" +
-               "barrelId='" + barrelId + '\'' +
-               ", indexedPages=" + indexedPages +
-               ", averageResponseTime=" + averageResponseTime +
-               '}';
+    public double getAvgIndexMs() {
+        return averageIndexMs;
     }
 }

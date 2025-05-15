@@ -10,7 +10,7 @@ import java.util.Scanner;
 import com.googol.Gateway.BarrelStat;
 import com.googol.Gateway.GatewayService;
 import com.googol.Queue.URLQueueInterface;
-import com.googol.Storage.PageInfo;
+import com.googol.Gateway.PageInfo;
 
 public class RMIClient {
     private static final String HOST = "localhost";

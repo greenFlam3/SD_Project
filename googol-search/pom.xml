@@ -17,11 +17,16 @@
 
     <dependencies>
     
-
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>1.19.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.googol</groupId>
+            <artifactId>googol-shared</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
 
     </dependencies>

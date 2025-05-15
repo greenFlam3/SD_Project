@@ -14,7 +14,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import com.googol.Storage.PageInfo;
+import com.googol.Gateway.PageInfo;
+import com.googol.Gateway.GatewayService;
 import com.googol.Storage.StorageBarrel;
 
 public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
@@ -205,7 +206,11 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
 
     @Override
     public List<String> getTopSearches() throws RemoteException {
-        return com.googol.Util.StopWords.getTop10SearchTerms();
+        return searchCounts.entrySet().stream()
+                .sorted((a, b) -> Integer.compare(b.getValue().get(), a.getValue().get())) // ordenar descendente
+                .limit(10)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -56,10 +56,10 @@
 		</dependency>
 
 		<dependency>
-        	<groupId>com.googol</groupId>
-        	<artifactId>googol-shared</artifactId>
-        	<version>1.0-SNAPSHOT</version>
-    	</dependency>
+            <groupId>com.googol</groupId>
+            <artifactId>googol-shared</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
 
 
 	</dependencies>
