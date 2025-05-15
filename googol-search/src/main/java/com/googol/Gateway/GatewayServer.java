@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.googol.Storage.StorageBarrel;
-import com.googol.Gateway.GatewayService;
-import com.googol.Gateway.PageInfo;
 
 /**
  * Servidor independiente para Gateway: 

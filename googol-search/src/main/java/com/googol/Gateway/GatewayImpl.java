@@ -14,8 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import com.googol.Gateway.PageInfo;
-import com.googol.Gateway.GatewayService;
+import com.googol.Storage.BarrelStat;
 import com.googol.Storage.StorageBarrel;
 
 public class GatewayImpl extends UnicastRemoteObject implements GatewayService {

@@ -1,4 +1,4 @@
-package com.googol.Gateway;
+package com.googol.Storage;
 
 import java.io.Serializable;
 

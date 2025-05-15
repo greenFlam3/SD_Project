@@ -7,7 +7,7 @@ import java.rmi.registry.Registry;
 import java.util.List;
 import java.util.Scanner;
 
-import com.googol.Gateway.BarrelStat;
+import com.googol.Storage.BarrelStat;
 import com.googol.Gateway.GatewayService;
 import com.googol.Queue.URLQueueInterface;
 import com.googol.Gateway.PageInfo;
