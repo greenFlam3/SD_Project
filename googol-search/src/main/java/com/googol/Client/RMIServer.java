@@ -1,5 +1,6 @@
 package com.googol.Client;
 
+import java.rmi.registry.LocateRegistry;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +15,9 @@ public class RMIServer {
     public static void main(String[] args) {
         try {
             // Create the RMI registry on the specified port
-            //Registry registry = LocateRegistry.createRegistry(RMI_PORT);
+            LocateRegistry.createRegistry(RMI_PORT);
+            System.out.println("[Gateway] RMI registry created on port " + RMI_PORT);
+
             
             List<StorageBarrel> barrels = new ArrayList<>();
             

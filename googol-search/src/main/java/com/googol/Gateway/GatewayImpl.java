@@ -128,6 +128,9 @@ public class GatewayImpl extends UnicastRemoteObject implements GatewayService {
                                 .filter(s -> !s.isBlank())
                                 .collect(Collectors.toSet());
         System.out.println("[Gateway] Terms to search: " + terms);
+        String fullQuery = String.join(" ", terms);
+        searchCounts.computeIfAbsent(fullQuery, k -> new AtomicInteger())
+            .incrementAndGet();
         terms.forEach(com.googol.Util.StopWords::updateSearchTerm);
         if (terms.isEmpty()) return List.of();
 
